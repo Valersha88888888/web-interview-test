@@ -9,6 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { TodoListForm } from './TodoListForm'
 
 const API_URL = 'http://localhost:3001'
@@ -21,6 +22,10 @@ const fetchTodoLists = async () => {
   }
 
   return response.json()
+}
+
+const isTodoListCompleted = (todoList) => {
+  return todoList.todos.length > 0 && todoList.todos.every((todo) => todo.completed)
 }
 
 export const TodoLists = ({ style }) => {
@@ -63,23 +68,31 @@ export const TodoLists = ({ style }) => {
           </Typography>
 
           <List disablePadding>
-            {Object.keys(todoLists).map((key) => (
-              <ListItemButton
-                key={key}
-                selected={activeList === key}
-                onClick={() => setActiveList(key)}
-                sx={{
-                  borderRadius: 1,
-                  marginBottom: 0.5,
-                }}
-              >
-                <ListItemIcon>
-                  <ReceiptIcon />
-                </ListItemIcon>
+            {Object.keys(todoLists).map((key) => {
+              const todoList = todoLists[key]
+              const completed = isTodoListCompleted(todoList)
 
-                <ListItemText primary={todoLists[key].title} />
-              </ListItemButton>
-            ))}
+              return (
+                <ListItemButton
+                  key={key}
+                  selected={activeList === key}
+                  onClick={() => setActiveList(key)}
+                  sx={{
+                    borderRadius: 1,
+                    marginBottom: 0.5,
+                  }}
+                >
+                  <ListItemIcon>
+                    {completed ? <CheckCircleIcon color='success' /> : <ReceiptIcon />}
+                  </ListItemIcon>
+
+                  <ListItemText
+                    primary={todoList.title}
+                    secondary={completed ? 'Completed' : undefined}
+                  />
+                </ListItemButton>
+              )
+            })}
           </List>
         </CardContent>
       </Card>

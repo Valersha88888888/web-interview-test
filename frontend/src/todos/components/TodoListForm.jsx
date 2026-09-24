@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   IconButton,
   TextField,
   Tooltip,
@@ -11,6 +12,12 @@ import {
 } from '@mui/material'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import AddIcon from '@mui/icons-material/Add'
+
+const createTodo = () => ({
+  id: `todo-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  text: '',
+  completed: false,
+})
 
 export const TodoListForm = ({ todoList, saveTodoList }) => {
   const [todos, setTodos] = useState(todoList.todos)
@@ -45,9 +52,9 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {todos.map((name, index) => (
+          {todos.map((todo, index) => (
             <Box
-              key={index}
+              key={todo.id}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -66,18 +73,41 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
                 {index + 1}
               </Typography>
 
+              <Checkbox
+                checked={todo.completed}
+                onChange={(event) => {
+                  setTodos(
+                    todos.map((item) =>
+                      item.id === todo.id
+                        ? { ...item, completed: event.target.checked }
+                        : item
+                    )
+                  )
+                }}
+                inputProps={{
+                  'aria-label': `Mark todo ${index + 1} as completed`,
+                }}
+              />
+
               <TextField
                 fullWidth
                 size='small'
                 label='What to do?'
-                value={name}
+                value={todo.text}
                 placeholder='Add a todo'
                 onChange={(event) => {
-                  setTodos([
-                    ...todos.slice(0, index),
-                    event.target.value,
-                    ...todos.slice(index + 1),
-                  ])
+                  setTodos(
+                    todos.map((item) =>
+                      item.id === todo.id
+                        ? { ...item, text: event.target.value }
+                        : item
+                    )
+                  )
+                }}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    textDecoration: todo.completed ? 'line-through' : 'none',
+                  },
                 }}
               />
 
@@ -85,10 +115,7 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
                 <IconButton
                   aria-label={`Delete todo ${index + 1}`}
                   onClick={() => {
-                    setTodos([
-                      ...todos.slice(0, index),
-                      ...todos.slice(index + 1),
-                    ])
+                    setTodos(todos.filter((item) => item.id !== todo.id))
                   }}
                 >
                   <DeleteOutlineIcon />
@@ -111,7 +138,7 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
             type='button'
             startIcon={<AddIcon />}
             onClick={() => {
-              setTodos([...todos, ''])
+              setTodos([...todos, createTodo()])
             }}
           >
             Add todo
