@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect } from 'react'
+import React, { Fragment, useState, useEffect, useCallback } from 'react'
 import {
   Card,
   CardContent,
@@ -31,7 +31,7 @@ export const TodoLists = ({ style }) => {
     fetchTodoLists().then(setTodoLists)
   }, [])
 
-  const saveTodoList = async (id, { todos }) => {
+  const saveTodoList = useCallback(async (id, { todos }) => {
     const response = await fetch(`${API_URL}/todo-lists/${id}`, {
       method: 'PUT',
       headers: {
@@ -50,7 +50,7 @@ export const TodoLists = ({ style }) => {
       ...currentTodoLists,
       [id]: updatedTodoList,
     }))
-  }
+  }, [])
 
   if (!Object.keys(todoLists).length) return null
 
