@@ -58,13 +58,25 @@ export const TodoLists = ({ style }) => {
     <Fragment>
       <Card style={style}>
         <CardContent>
-          <Typography component='h2'>My Todo Lists</Typography>
-          <List>
+          <Typography component='h2' variant='h5' sx={{ marginBottom: 1 }}>
+            My Todo Lists
+          </Typography>
+
+          <List disablePadding>
             {Object.keys(todoLists).map((key) => (
-              <ListItemButton key={key} onClick={() => setActiveList(key)}>
+              <ListItemButton
+                key={key}
+                selected={activeList === key}
+                onClick={() => setActiveList(key)}
+                sx={{
+                  borderRadius: 1,
+                  marginBottom: 0.5,
+                }}
+              >
                 <ListItemIcon>
                   <ReceiptIcon />
                 </ListItemIcon>
+
                 <ListItemText primary={todoLists[key].title} />
               </ListItemButton>
             ))}

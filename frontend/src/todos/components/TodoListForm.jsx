@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  TextField,
+  Box,
+  Button,
   Card,
   CardContent,
-  CardActions,
-  Button,
+  IconButton,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import AddIcon from '@mui/icons-material/Add'
 
 export const TodoListForm = ({ todoList, saveTodoList }) => {
@@ -37,70 +39,94 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
 
   return (
     <Card sx={{ margin: '0 1rem' }}>
-      <CardContent>
-        <Typography component='h2'>{todoList.title}</Typography>
+      <CardContent sx={{ padding: 3, '&:last-child': { paddingBottom: 3 } }}>
+        <Typography component='h2' variant='h5' sx={{ marginBottom: 2 }}>
+          {todoList.title}
+        </Typography>
 
-        {todos.map((name, index) => (
-          <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
-            <Typography sx={{ margin: '8px' }} variant='h6'>
-              {index + 1}
-            </Typography>
-
-            <TextField
-              sx={{ flexGrow: 1, marginTop: '1rem' }}
-              label='What to do?'
-              value={name}
-              onChange={(event) => {
-                setTodos([
-                  ...todos.slice(0, index),
-                  event.target.value,
-                  ...todos.slice(index + 1),
-                ])
-              }}
-            />
-
-            <Button
-              sx={{ margin: '8px' }}
-              size='small'
-              color='secondary'
-              aria-label={`Delete todo ${index + 1}`}
-              onClick={() => {
-                setTodos([
-                  ...todos.slice(0, index),
-                  ...todos.slice(index + 1),
-                ])
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {todos.map((name, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
             >
-              <DeleteIcon />
-            </Button>
-          </div>
-        ))}
+              <Typography
+                variant='body2'
+                color='text.secondary'
+                sx={{
+                  width: 24,
+                  flexShrink: 0,
+                  textAlign: 'center',
+                }}
+              >
+                {index + 1}
+              </Typography>
 
-        <CardActions
+              <TextField
+                fullWidth
+                size='small'
+                label='What to do?'
+                value={name}
+                placeholder='Add a todo'
+                onChange={(event) => {
+                  setTodos([
+                    ...todos.slice(0, index),
+                    event.target.value,
+                    ...todos.slice(index + 1),
+                  ])
+                }}
+              />
+
+              <Tooltip title='Delete todo'>
+                <IconButton
+                  aria-label={`Delete todo ${index + 1}`}
+                  onClick={() => {
+                    setTodos([
+                      ...todos.slice(0, index),
+                      ...todos.slice(index + 1),
+                    ])
+                  }}
+                >
+                  <DeleteOutlineIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ))}
+        </Box>
+
+        <Box
           sx={{
+            marginTop: 2,
+            display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: 2,
           }}
         >
           <Button
             type='button'
-            color='primary'
+            startIcon={<AddIcon />}
             onClick={() => {
               setTodos([...todos, ''])
             }}
           >
-            Add Todo <AddIcon />
+            Add todo
           </Button>
 
           <Typography
             variant='body2'
             color={saveStatus === 'error' ? 'error' : 'text.secondary'}
+            role='status'
           >
             {saveStatus === 'saving' && 'Saving...'}
-            {saveStatus === 'saved' && 'Saved'}
+            {saveStatus === 'saved' && '✓ Saved'}
             {saveStatus === 'error' && 'Could not save'}
           </Typography>
-        </CardActions>
+        </Box>
       </CardContent>
     </Card>
   )
