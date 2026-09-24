@@ -28,7 +28,7 @@ const isTodoListCompleted = (todoList) => {
   return todoList.todos.length > 0 && todoList.todos.every((todo) => todo.completed)
 }
 
-export const TodoLists = ({ style }) => {
+export const TodoLists = () => {
   const [todoLists, setTodoLists] = useState({})
   const [activeList, setActiveList] = useState()
 
@@ -61,9 +61,27 @@ export const TodoLists = ({ style }) => {
 
   return (
     <Fragment>
-      <Card style={style}>
-        <CardContent>
-          <Typography component='h2' variant='h5' sx={{ marginBottom: 1 }}>
+      <Card
+        sx={{
+          margin: { xs: '0.5rem', sm: '1rem' },
+        }}
+      >
+        <CardContent
+          sx={{
+            padding: { xs: 2, sm: 3 },
+            '&:last-child': {
+              paddingBottom: { xs: 2, sm: 3 },
+            },
+          }}
+        >
+          <Typography
+            component='h2'
+            variant='h5'
+            sx={{
+              marginBottom: 1,
+              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            }}
+          >
             My Todo Lists
           </Typography>
 
@@ -80,15 +98,24 @@ export const TodoLists = ({ style }) => {
                   sx={{
                     borderRadius: 1,
                     marginBottom: 0.5,
+                    paddingY: { xs: 1, sm: 1.25 },
+                    paddingX: { xs: 1, sm: 2 },
                   }}
                 >
-                  <ListItemIcon>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: { xs: 40, sm: 56 },
+                    }}
+                  >
                     {completed ? <CheckCircleIcon color='success' /> : <ReceiptIcon />}
                   </ListItemIcon>
 
                   <ListItemText
                     primary={todoList.title}
                     secondary={completed ? 'Completed' : undefined}
+                    primaryTypographyProps={{
+                      fontSize: { xs: '1rem', sm: '1.1rem' },
+                    }}
                   />
                 </ListItemButton>
               )
