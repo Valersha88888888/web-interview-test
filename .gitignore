@@ -1,0 +1,6 @@
+# Frontend
+frontend/node_modules
+
+# Backend
+backend/node_modules
+backend/npm-debug.log
