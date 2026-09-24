@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Alert,
   Box,
@@ -6,14 +6,15 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  LinearProgress,
   List,
   ListItemButton,
-  ListItemText,
   ListItemIcon,
+  ListItemText,
   Typography,
 } from '@mui/material'
-import ReceiptIcon from '@mui/icons-material/Receipt'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import WorkOutlineRoundedIcon from '@mui/icons-material/WorkOutlineRounded'
+import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded'
 import { TodoListForm } from './TodoListForm'
 
 const API_URL = 'http://localhost:3001'
@@ -29,7 +30,10 @@ const fetchTodoLists = async () => {
 }
 
 const isTodoListCompleted = (todoList) => {
-  return todoList.todos.length > 0 && todoList.todos.every((todo) => todo.completed)
+  return (
+    todoList.todos.length > 0 &&
+    todoList.todos.every((todo) => todo.completed)
+  )
 }
 
 export const TodoLists = () => {
@@ -45,6 +49,9 @@ export const TodoLists = () => {
     try {
       const lists = await fetchTodoLists()
       setTodoLists(lists)
+
+      const firstListId = Object.keys(lists)[0]
+      setActiveList((current) => current || firstListId)
     } catch {
       setLoadError(true)
     } finally {
@@ -80,16 +87,17 @@ export const TodoLists = () => {
   if (isLoading) {
     return (
       <Box
+        role='status'
         sx={{
-          minHeight: 180,
+          minHeight: 300,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 1.5,
         }}
-        role='status'
       >
-        <CircularProgress size={24} />
+        <CircularProgress size={30} />
         <Typography color='text.secondary'>
           Loading todo lists...
         </Typography>
@@ -99,20 +107,12 @@ export const TodoLists = () => {
 
   if (loadError) {
     return (
-      <Card
-        sx={{
-          margin: { xs: '0.5rem', sm: '1rem' },
-        }}
-      >
+      <Card sx={{ borderRadius: 3 }}>
         <CardContent>
           <Alert
             severity='error'
             action={
-              <Button
-                color='inherit'
-                size='small'
-                onClick={loadTodoLists}
-              >
+              <Button color='inherit' size='small' onClick={loadTodoLists}>
                 Retry
               </Button>
             }
@@ -124,78 +124,156 @@ export const TodoLists = () => {
     )
   }
 
+  const lists = Object.values(todoLists)
+  const allTodos = lists.flatMap((list) => list.todos)
+  const completedTodos = allTodos.filter((todo) => todo.completed).length
+
+  const progress = allTodos.length
+    ? Math.round((completedTodos / allTodos.length) * 100)
+    : 0
+
   return (
-    <Fragment>
-      <Card
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: '230px minmax(0, 1fr)',
+          lg: '270px minmax(0, 1fr)',
+        },
+        gap: { xs: 2, sm: 2, lg: 2.5 },
+        alignItems: 'start',
+      }}
+    >
+      <Box
+        component='aside'
         sx={{
-          margin: { xs: '0.5rem', sm: '1rem' },
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          minWidth: 0,
         }}
       >
-        <CardContent
+        <Card
           sx={{
-            padding: { xs: 2, sm: 3 },
-            '&:last-child': {
-              paddingBottom: { xs: 2, sm: 3 },
-            },
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 10px 30px rgba(28, 52, 91, 0.07)',
           }}
         >
-          <Typography
-            component='h2'
-            variant='h5'
-            sx={{
-              marginBottom: 1,
-              fontSize: { xs: '1.25rem', sm: '1.5rem' },
-            }}
-          >
-            My Todo Lists
-          </Typography>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Typography
+              variant='h6'
+              sx={{
+                px: 1,
+                mb: 1.5,
+                fontWeight: 700,
+              }}
+            >
+              My Lists
+            </Typography>
 
-          <List disablePadding>
-            {Object.keys(todoLists).map((key) => {
-              const todoList = todoLists[key]
-              const completed = isTodoListCompleted(todoList)
+            <List disablePadding>
+              {lists.map((todoList) => {
+                const completed = isTodoListCompleted(todoList)
+                const isActive = activeList === todoList.id
 
-              return (
-                <ListItemButton
-                  key={key}
-                  selected={activeList === key}
-                  onClick={() => setActiveList(key)}
-                  sx={{
-                    borderRadius: 1,
-                    marginBottom: 0.5,
-                    paddingY: { xs: 1, sm: 1.25 },
-                    paddingX: { xs: 1, sm: 2 },
-                  }}
-                >
-                  <ListItemIcon
+                return (
+                  <ListItemButton
+                    key={todoList.id}
+                    selected={isActive}
+                    onClick={() => setActiveList(todoList.id)}
                     sx={{
-                      minWidth: { xs: 40, sm: 56 },
+                      mb: 0.75,
+                      borderRadius: 2,
+                      px: 1.25,
+                      py: 1,
+                      border: '1px solid',
+                      borderColor: isActive
+                        ? 'rgba(47,107,220,0.22)'
+                        : 'transparent',
+                      '&.Mui-selected': {
+                        background:
+                          'linear-gradient(90deg, rgba(47,107,220,0.12), rgba(47,107,220,0.05))',
+                      },
                     }}
                   >
-                    {completed ? <CheckCircleIcon color='success' /> : <ReceiptIcon />}
-                  </ListItemIcon>
+                    <ListItemIcon sx={{ minWidth: 42 }}>
+                      {completed ? (
+                        <CheckCircleOutlineRoundedIcon color='success' />
+                      ) : (
+                        <WorkOutlineRoundedIcon
+                          color={isActive ? 'primary' : 'action'}
+                        />
+                      )}
+                    </ListItemIcon>
 
-                  <ListItemText
-                    primary={todoList.title}
-                    secondary={completed ? 'Completed' : undefined}
-                    primaryTypographyProps={{
-                      fontSize: { xs: '1rem', sm: '1.1rem' },
-                    }}
-                  />
-                </ListItemButton>
-              )
-            })}
-          </List>
-        </CardContent>
-      </Card>
+                    <ListItemText
+                      primary={todoList.title}
+                      secondary={`${todoList.todos.length} ${
+                        todoList.todos.length === 1 ? 'todo' : 'todos'
+                      }`}
+                      primaryTypographyProps={{
+                        fontWeight: isActive ? 700 : 500,
+                      }}
+                    />
+                  </ListItemButton>
+                )
+              })}
+            </List>
+          </CardContent>
+        </Card>
 
-      {todoLists[activeList] && (
-        <TodoListForm
-          key={activeList}
-          todoList={todoLists[activeList]}
-          saveTodoList={saveTodoList}
-        />
-      )}
-    </Fragment>
+        <Card
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 10px 30px rgba(28, 52, 91, 0.07)',
+          }}
+        >
+          <CardContent>
+            <Typography variant='subtitle1' sx={{ fontWeight: 700 }}>
+              Progress
+            </Typography>
+
+            <Typography
+              variant='body2'
+              color='text.secondary'
+              sx={{ mt: 0.5, mb: 1.5 }}
+            >
+              {completedTodos} of {allTodos.length} completed
+            </Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <LinearProgress
+                variant='determinate'
+                value={progress}
+                sx={{
+                  flexGrow: 1,
+                  height: 7,
+                  borderRadius: 99,
+                }}
+              />
+
+              <Typography variant='body2' sx={{ fontWeight: 700 }}>
+                {progress}%
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+
+      <Box component='section' sx={{ minWidth: 0 }}>
+        {todoLists[activeList] && (
+          <TodoListForm
+            key={activeList}
+            todoList={todoLists[activeList]}
+            saveTodoList={saveTodoList}
+          />
+        )}
+      </Box>
+    </Box>
   )
 }

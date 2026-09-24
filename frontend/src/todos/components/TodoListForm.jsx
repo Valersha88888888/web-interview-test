@@ -3,48 +3,71 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
   Checkbox,
+  Chip,
   IconButton,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
-import AddIcon from '@mui/icons-material/Add'
+import WorkOutlineRoundedIcon from '@mui/icons-material/WorkOutlineRounded'
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
 
-const createTodo = () => ({
+const createTodo = (text = '', dueDate = null) => ({
   id: `todo-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-  text: '',
+  text,
   completed: false,
-  dueDate: null,
+  dueDate,
 })
 
 const getDueDateStatus = (todo) => {
-  if (todo.completed) return 'Completed'
-  if (!todo.dueDate) return ''
+  if (todo.completed) {
+    return {
+      label: 'Completed',
+      color: 'success',
+    }
+  }
+
+  if (!todo.dueDate) return null
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const dueDate = new Date(`${todo.dueDate}T00:00:00`)
-  const differenceInMs = dueDate.getTime() - today.getTime()
-  const differenceInDays = Math.round(differenceInMs / 86400000)
+  const differenceInDays = Math.round(
+    (dueDate.getTime() - today.getTime()) / 86400000
+  )
 
-  if (differenceInDays === 0) return 'Due today'
+  if (differenceInDays === 0) {
+    return {
+      label: 'Due today',
+      color: 'warning',
+    }
+  }
 
   if (differenceInDays > 0) {
-    return `Due in ${differenceInDays} day${differenceInDays === 1 ? '' : 's'}`
+    return {
+      label: `Due in ${differenceInDays} day${differenceInDays === 1 ? '' : 's'}`,
+      color: 'primary',
+    }
   }
 
   const overdueDays = Math.abs(differenceInDays)
 
-  return `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`
+  return {
+    label: `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`,
+    color: 'error',
+  }
 }
 
 export const TodoListForm = ({ todoList, saveTodoList }) => {
   const [todos, setTodos] = useState(todoList.todos)
   const [saveStatus, setSaveStatus] = useState('idle')
+  const [newTodoText, setNewTodoText] = useState('')
+  const [newTodoDate, setNewTodoDate] = useState('')
+  const [editingTodoId, setEditingTodoId] = useState(null)
   const isFirstRender = useRef(true)
 
   useEffect(() => {
@@ -67,212 +90,343 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
     return () => clearTimeout(timeout)
   }, [todos, todoList.id, saveTodoList])
 
+  const completedCount = todos.filter((todo) => todo.completed).length
+
+  const handleAddTodo = () => {
+    const trimmedText = newTodoText.trim()
+
+    if (!trimmedText) return
+
+    setTodos([
+      ...todos,
+      createTodo(trimmedText, newTodoDate || null),
+    ])
+
+    setNewTodoText('')
+    setNewTodoDate('')
+  }
+
   return (
-    <Card sx={{ margin: { xs: '0 0.5rem', sm: '0 1rem' } }}>
-      <CardContent
+    <Card
+      sx={{
+        overflow: 'hidden',
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: '0 14px 38px rgba(28, 52, 91, 0.09)',
+      }}
+    >
+      <Box
         sx={{
-          padding: { xs: 2, sm: 3 },
-          '&:last-child': {
-            paddingBottom: { xs: 2, sm: 3 },
-          },
+          px: { xs: 2, sm: 3 },
+          py: { xs: 2.25, sm: 2.75 },
+          color: 'white',
+          background:
+            'linear-gradient(135deg, #355fa9 0%, #5d7fbd 55%, #8298c3 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
         }}
       >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              display: 'grid',
+              placeItems: 'center',
+              backgroundColor: 'rgba(255,255,255,0.14)',
+            }}
+          >
+            <WorkOutlineRoundedIcon />
+          </Box>
+
+          <Box>
+            <Typography component='h2' variant='h5' sx={{ fontWeight: 700 }}>
+              {todoList.title}
+            </Typography>
+
+            <Typography
+              variant='body2'
+              sx={{ color: 'rgba(255,255,255,0.8)', mt: 0.25 }}
+            >
+              {todos.length} {todos.length === 1 ? 'todo' : 'todos'} ·{' '}
+              {completedCount} completed
+            </Typography>
+          </Box>
+        </Box>
+
         <Typography
-          component='h2'
-          variant='h5'
+          variant='body2'
+          role='status'
+          aria-live='polite'
           sx={{
-            marginBottom: 2,
-            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            textAlign: 'right',
+            color:
+              saveStatus === 'error'
+                ? '#ffd2d2'
+                : 'rgba(255,255,255,0.85)',
           }}
         >
-          {todoList.title}
+          {saveStatus === 'saving' && 'Saving...'}
+          {saveStatus === 'saved' && 'Saved'}
+          {saveStatus === 'error' && 'Could not save'}
         </Typography>
+      </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {todos.map((todo, index) => {
-            const dueDateStatus = getDueDateStatus(todo)
+      <Box
+        sx={{
+          p: { xs: 1.5, sm: 2.5 },
+          backgroundColor: '#f8faff',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'minmax(0, 1fr) 175px auto',
+            },
+            gap: 1,
+            mb: 2,
+            p: 1.25,
+            borderRadius: 2.5,
+            backgroundColor: 'white',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <TextField
+            size='small'
+            placeholder='Add a new todo...'
+            value={newTodoText}
+            onChange={(event) => setNewTodoText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                handleAddTodo()
+              }
+            }}
+          />
 
-            return (
-              <Box
-                key={todo.id}
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '32px minmax(0, 1fr) 40px',
-                    sm: '32px minmax(0, 1fr) 160px 40px',
-                    md: '24px 42px minmax(0, 1fr) 170px 40px',
-                  },
-                  gridTemplateAreas: {
-                    xs: `
-                      "check text delete"
-                      ". date ."
-                    `,
-                    sm: `
-                      "check text date delete"
-                    `,
-                    md: `
-                      "number check text date delete"
-                    `,
-                  },
-                  alignItems: 'start',
-                  gap: 1,
-                }}
-              >
-                <Typography
-                  variant='body2'
-                  color='text.secondary'
+          <TextField
+            size='small'
+            type='date'
+            value={newTodoDate}
+            inputProps={{
+              'aria-label': 'Due date for new todo',
+            }}
+            onChange={(event) => setNewTodoDate(event.target.value)}
+          />
+
+          <Button
+            variant='contained'
+            startIcon={<AddRoundedIcon />}
+            disabled={!newTodoText.trim()}
+            onClick={handleAddTodo}
+            sx={{
+              borderRadius: 2,
+              px: 2,
+              boxShadow: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Add todo
+          </Button>
+        </Box>
+
+        {todos.length === 0 ? (
+          <Box
+            sx={{
+              py: 6,
+              px: 2,
+              textAlign: 'center',
+              backgroundColor: 'white',
+              border: '1px dashed',
+              borderColor: 'divider',
+              borderRadius: 2.5,
+            }}
+          >
+            <Typography sx={{ fontWeight: 700 }}>
+              No todos yet
+            </Typography>
+
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
+              Add your first todo to get started.
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {todos.map((todo, index) => {
+              const status = getDueDateStatus(todo)
+              const isEditing = editingTodoId === todo.id
+
+              return (
+                <Box
+                  key={todo.id}
                   sx={{
-                    gridArea: 'number',
-                    display: { xs: 'none', md: 'block' },
-                    textAlign: 'center',
-                    paddingTop: 1.25,
-                  }}
-                >
-                  {index + 1}
-                </Typography>
-
-                <Checkbox
-                  sx={{
-                    gridArea: 'check',
-                    alignSelf: 'center',
-                  }}
-                  checked={todo.completed}
-                  onChange={(event) => {
-                    setTodos(
-                      todos.map((item) =>
-                        item.id === todo.id
-                          ? { ...item, completed: event.target.checked }
-                          : item
-                      )
-                    )
-                  }}
-                  inputProps={{
-                    'aria-label': `Mark todo ${index + 1} as completed`,
-                  }}
-                />
-
-                <TextField
-                  sx={{
-                    gridArea: 'text',
-                    '& .MuiInputBase-input': {
-                      textDecoration: todo.completed ? 'line-through' : 'none',
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '40px minmax(0, 1fr) 40px 40px',
+                      md: '40px minmax(160px, 1fr) 165px minmax(105px, auto) 40px 40px',
+                    },
+                    gridTemplateAreas: {
+                      xs: `
+                        "check text edit delete"
+                        ". date date ."
+                        ". status status ."
+                      `,
+                      md: '"check text date status edit delete"',
+                    },
+                    alignItems: 'center',
+                    gap: 0.75,
+                    p: { xs: 1, sm: 1.25 },
+                    backgroundColor: 'white',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2.25,
+                    transition:
+                      'box-shadow 160ms ease, border-color 160ms ease',
+                    '&:hover': {
+                      borderColor: 'rgba(47,107,220,0.24)',
+                      boxShadow: '0 7px 20px rgba(28,52,91,0.06)',
                     },
                   }}
-                  fullWidth
-                  size='small'
-                  label='What to do?'
-                  value={todo.text}
-                  placeholder='Add a todo'
-                  onChange={(event) => {
-                    setTodos(
-                      todos.map((item) =>
-                        item.id === todo.id
-                          ? { ...item, text: event.target.value }
-                          : item
-                      )
-                    )
-                  }}
-                />
-
-                <Box
-                  sx={{
-                    gridArea: 'date',
-                    minWidth: 0,
-                  }}
                 >
-                  <TextField
-                    fullWidth
-                    size='small'
-                    type='date'
-                    label='Due date'
-                    value={todo.dueDate || ''}
-                    InputLabelProps={{ shrink: true }}
+                  <Checkbox
+                    sx={{ gridArea: 'check' }}
+                    checked={todo.completed}
                     onChange={(event) => {
                       setTodos(
                         todos.map((item) =>
                           item.id === todo.id
-                            ? { ...item, dueDate: event.target.value || null }
+                            ? { ...item, completed: event.target.checked }
+                            : item
+                        )
+                      )
+                    }}
+                    inputProps={{
+                      'aria-label': `Mark todo ${index + 1} as completed`,
+                    }}
+                  />
+
+                  <TextField
+                    fullWidth
+                    variant='standard'
+                    value={todo.text}
+                    placeholder='What to do?'
+                    focused={isEditing}
+                    InputProps={{
+                      disableUnderline: !isEditing,
+                      readOnly: !isEditing,
+                    }}
+                    sx={{
+                      gridArea: 'text',
+                      '& .MuiInputBase-input': {
+                        fontWeight: 500,
+                        textDecoration: todo.completed
+                          ? 'line-through'
+                          : 'none',
+                        color: todo.completed
+                          ? 'text.secondary'
+                          : 'text.primary',
+                      },
+                    }}
+                    onChange={(event) => {
+                      setTodos(
+                        todos.map((item) =>
+                          item.id === todo.id
+                            ? { ...item, text: event.target.value }
+                            : item
+                        )
+                      )
+                    }}
+                    onBlur={() => setEditingTodoId(null)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        setEditingTodoId(null)
+                        event.currentTarget.blur()
+                      }
+                    }}
+                  />
+
+                  <TextField
+                    size='small'
+                    type='date'
+                    value={todo.dueDate || ''}
+                    inputProps={{
+                      'aria-label': `Due date for todo ${index + 1}`,
+                    }}
+                    sx={{
+                      gridArea: 'date',
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: '#fafbfe',
+                      },
+                    }}
+                    onChange={(event) => {
+                      setTodos(
+                        todos.map((item) =>
+                          item.id === todo.id
+                            ? {
+                                ...item,
+                                dueDate: event.target.value || null,
+                              }
                             : item
                         )
                       )
                     }}
                   />
 
-                  {dueDateStatus && (
-                    <Typography
-                      variant='caption'
-                      color={
-                        !todo.completed && dueDateStatus.startsWith('Overdue')
-                          ? 'error'
-                          : 'text.secondary'
-                      }
-                      sx={{
-                        display: 'block',
-                        marginTop: 0.5,
+                  <Box sx={{ gridArea: 'status' }}>
+                    {status && (
+                      <Chip
+                        size='small'
+                        label={status.label}
+                        color={status.color}
+                        variant={
+                          status.color === 'primary'
+                            ? 'outlined'
+                            : 'filled'
+                        }
+                        sx={{
+                          maxWidth: '100%',
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                  </Box>
+
+                  <Tooltip title='Edit todo'>
+                    <IconButton
+                      sx={{ gridArea: 'edit' }}
+                      color={isEditing ? 'primary' : 'default'}
+                      aria-label={`Edit todo ${index + 1}`}
+                      onClick={() => setEditingTodoId(todo.id)}
+                    >
+                      <EditOutlinedIcon fontSize='small' />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title='Delete todo'>
+                    <IconButton
+                      sx={{ gridArea: 'delete' }}
+                      aria-label={`Delete todo ${index + 1}`}
+                      onClick={() => {
+                        setTodos(
+                          todos.filter((item) => item.id !== todo.id)
+                        )
                       }}
                     >
-                      {dueDateStatus}
-                    </Typography>
-                  )}
+                      <DeleteOutlineRoundedIcon fontSize='small' />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
-
-                <Tooltip title='Delete todo'>
-                  <IconButton
-                    sx={{
-                      gridArea: 'delete',
-                      justifySelf: 'center',
-                    }}
-                    aria-label={`Delete todo ${index + 1}`}
-                    onClick={() => {
-                      setTodos(todos.filter((item) => item.id !== todo.id))
-                    }}
-                  >
-                    <DeleteOutlineIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            )
-          })}
-        </Box>
-
-        <Box
-          sx={{
-            marginTop: 2,
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'space-between',
-            alignItems: { xs: 'stretch', sm: 'center' },
-            gap: 1.5,
-          }}
-        >
-          <Button
-            type='button'
-            startIcon={<AddIcon />}
-            sx={{
-              alignSelf: { xs: 'flex-start', sm: 'auto' },
-            }}
-            onClick={() => {
-              setTodos([...todos, createTodo()])
-            }}
-          >
-            Add todo
-          </Button>
-
-          <Typography
-            variant='body2'
-            color={saveStatus === 'error' ? 'error' : 'text.secondary'}
-            role='status'
-            sx={{
-              minHeight: '1.5rem',
-              textAlign: { xs: 'left', sm: 'right' },
-            }}
-          >
-            {saveStatus === 'saving' && 'Saving...'}
-            {saveStatus === 'saved' && '✓ Saved'}
-            {saveStatus === 'error' && 'Could not save'}
-          </Typography>
-        </Box>
-      </CardContent>
+              )
+            })}
+          </Box>
+        )}
+      </Box>
     </Card>
   )
 }
