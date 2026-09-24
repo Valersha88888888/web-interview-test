@@ -11,24 +11,16 @@ import {
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { TodoListForm } from './TodoListForm'
 
-// Simulate network
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const API_URL = 'http://localhost:3001'
 
-const fetchTodoLists = () => {
-  return sleep(1000).then(() =>
-    Promise.resolve({
-      '0000000001': {
-        id: '0000000001',
-        title: 'First List',
-        todos: ['First todo of first list!'],
-      },
-      '0000000002': {
-        id: '0000000002',
-        title: 'Second List',
-        todos: ['First todo of second list!'],
-      },
-    })
-  )
+const fetchTodoLists = async () => {
+  const response = await fetch(`${API_URL}/todo-lists`)
+
+  if (!response.ok) {
+    throw new Error('Could not load todo lists')
+  }
+
+  return response.json()
 }
 
 export const TodoLists = ({ style }) => {
@@ -39,7 +31,29 @@ export const TodoLists = ({ style }) => {
     fetchTodoLists().then(setTodoLists)
   }, [])
 
+  const saveTodoList = async (id, { todos }) => {
+    const response = await fetch(`${API_URL}/todo-lists/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ todos }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Could not save todo list')
+    }
+
+    const updatedTodoList = await response.json()
+
+    setTodoLists((currentTodoLists) => ({
+      ...currentTodoLists,
+      [id]: updatedTodoList,
+    }))
+  }
+
   if (!Object.keys(todoLists).length) return null
+
   return (
     <Fragment>
       <Card style={style}>
@@ -57,17 +71,12 @@ export const TodoLists = ({ style }) => {
           </List>
         </CardContent>
       </Card>
+
       {todoLists[activeList] && (
         <TodoListForm
-          key={activeList} // use key to make React recreate component to reset internal state
+          key={activeList}
           todoList={todoLists[activeList]}
-          saveTodoList={(id, { todos }) => {
-            const listToUpdate = todoLists[id]
-            setTodoLists({
-              ...todoLists,
-              [id]: { ...listToUpdate, todos },
-            })
-          }}
+          saveTodoList={saveTodoList}
         />
       )}
     </Fragment>
