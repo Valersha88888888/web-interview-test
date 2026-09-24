@@ -1,7 +1,11 @@
 import React, { Fragment, useState, useEffect, useCallback } from 'react'
 import {
+  Alert,
+  Box,
+  Button,
   Card,
   CardContent,
+  CircularProgress,
   List,
   ListItemButton,
   ListItemText,
@@ -31,10 +35,26 @@ const isTodoListCompleted = (todoList) => {
 export const TodoLists = () => {
   const [todoLists, setTodoLists] = useState({})
   const [activeList, setActiveList] = useState()
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+
+  const loadTodoLists = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(false)
+
+    try {
+      const lists = await fetchTodoLists()
+      setTodoLists(lists)
+    } catch {
+      setLoadError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    fetchTodoLists().then(setTodoLists)
-  }, [])
+    loadTodoLists()
+  }, [loadTodoLists])
 
   const saveTodoList = useCallback(async (id, { todos }) => {
     const response = await fetch(`${API_URL}/todo-lists/${id}`, {
@@ -57,7 +77,52 @@ export const TodoLists = () => {
     }))
   }, [])
 
-  if (!Object.keys(todoLists).length) return null
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: 180,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1.5,
+        }}
+        role='status'
+      >
+        <CircularProgress size={24} />
+        <Typography color='text.secondary'>
+          Loading todo lists...
+        </Typography>
+      </Box>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Card
+        sx={{
+          margin: { xs: '0.5rem', sm: '1rem' },
+        }}
+      >
+        <CardContent>
+          <Alert
+            severity='error'
+            action={
+              <Button
+                color='inherit'
+                size='small'
+                onClick={loadTodoLists}
+              >
+                Retry
+              </Button>
+            }
+          >
+            Unable to load todo lists. Check that the server is running and try again.
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Fragment>
